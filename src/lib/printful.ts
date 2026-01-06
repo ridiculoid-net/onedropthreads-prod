@@ -1,13 +1,13 @@
 import type { PrintfulCreateOrderRequest } from '@/types';
 
-if (!process.env.PRINTFUL_API_KEY) {
-  throw new Error('PRINTFUL_API_KEY is not set');
-}
-
 const PRINTFUL_API_BASE = 'https://api.printful.com';
-const PRINTFUL_API_KEY = process.env.PRINTFUL_API_KEY;
+const PRINTFUL_API_KEY = process.env.PRINTFUL_API_KEY || '';
 
 async function printfulRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  if (!PRINTFUL_API_KEY) {
+    throw new Error('PRINTFUL_API_KEY not configured');
+  }
+  
   const response = await fetch(`${PRINTFUL_API_BASE}${endpoint}`, {
     ...options,
     headers: {
@@ -27,7 +27,6 @@ async function printfulRequest<T>(endpoint: string, options?: RequestInit): Prom
 }
 
 export async function uploadDesignFile(file: Buffer, fileName: string): Promise<{ id: string; url: string }> {
-  // Upload file to Printful
   const formData = new FormData();
   formData.append('file', new Blob([file]), fileName);
 
@@ -53,7 +52,6 @@ export async function createPrintfulProduct(
   designFileId: string,
   availableSizes: string[]
 ): Promise<{ productId: string; variants: Array<{ size: string; variantId: string }> }> {
-  // Create sync product
   const product = await printfulRequest<any>('/store/products', {
     method: 'POST',
     body: JSON.stringify({
@@ -62,7 +60,7 @@ export async function createPrintfulProduct(
       },
       sync_variants: availableSizes.map(size => ({
         retail_price: '35.00',
-        variant_id: getVariantIdForSize(printfulBaseProductId, size), // Map size to Printful variant
+        variant_id: getVariantIdForSize(printfulBaseProductId, size),
         files: [
           {
             id: designFileId,
@@ -91,11 +89,7 @@ export async function createPrintfulOrder(orderData: PrintfulCreateOrderRequest)
   return { id: order.id };
 }
 
-// Helper: Map size to Printful variant ID
-// NOTE: These IDs are specific to each base product
-// For Bella + Canvas 3001, common variant IDs are:
 function getVariantIdForSize(baseProductId: string, size: string): string {
-  // Bella + Canvas 3001 (Unisex T-shirt) variant IDs
   const bellaCanvas3001: Record<string, string> = {
     'S': '4012',
     'M': '4013',
@@ -104,9 +98,8 @@ function getVariantIdForSize(baseProductId: string, size: string): string {
     '2XL': '4016',
   };
 
-  // Add more base products as needed
   const variantMaps: Record<string, Record<string, string>> = {
-    '71': bellaCanvas3001, // Bella + Canvas 3001
+    '71': bellaCanvas3001,
   };
 
   const map = variantMaps[baseProductId];
@@ -118,7 +111,6 @@ function getVariantIdForSize(baseProductId: string, size: string): string {
 }
 
 function getSizeFromVariantId(variantId: string): string {
-  // Reverse mapping (simplified - extend as needed)
   const idToSize: Record<string, string> = {
     '4012': 'S',
     '4013': 'M',
