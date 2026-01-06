@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 interface Order {
@@ -12,7 +12,7 @@ interface Order {
   created_at: number;
 }
 
-export default function AdminPage() {
+function AdminContent() {
   const searchParams = useSearchParams();
   const apiKey = searchParams.get('key');
 
@@ -21,7 +21,6 @@ export default function AdminPage() {
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
 
-  // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [designFile, setDesignFile] = useState<File | null>(null);
@@ -74,7 +73,7 @@ export default function AdminPage() {
       formData.append('title', title);
       formData.append('description', description);
       formData.append('designFile', designFile);
-      formData.append('printfulBaseProductId', '71'); // Bella + Canvas 3001
+      formData.append('printfulBaseProductId', '71');
       formData.append('availableSizes', JSON.stringify(sizes));
 
       const res = await fetch(`/api/admin/products?key=${apiKey}`, {
@@ -87,7 +86,6 @@ export default function AdminPage() {
         throw new Error(data.error || 'Upload failed');
       }
 
-      // Reset form
       setTitle('');
       setDescription('');
       setDesignFile(null);
@@ -117,7 +115,6 @@ export default function AdminPage() {
     <div className="max-w-6xl mx-auto px-6 py-12">
       <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
 
-      {/* Upload New Product */}
       <div className="bg-zinc-900 rounded-lg p-8 mb-12">
         <h2 className="text-2xl font-bold mb-6">Add New Drop</h2>
 
@@ -193,7 +190,6 @@ export default function AdminPage() {
         </form>
       </div>
 
-      {/* Orders List */}
       <div className="bg-zinc-900 rounded-lg p-8">
         <h2 className="text-2xl font-bold mb-6">Orders</h2>
 
@@ -249,5 +245,13 @@ export default function AdminPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={<div className="max-w-4xl mx-auto px-6 py-12"><p className="text-zinc-500">Loading...</p></div>}>
+      <AdminContent />
+    </Suspense>
   );
 }
